@@ -29,10 +29,15 @@ const initializeAdmin = async () => {
 
 const login = async (req, res) => {
     try {
-        const selectedUser = await UserSchema.findOne({email: req.body.email});
+        const selectedUser = await UserSchema.findOne({ email: req.body.email });
         if (!selectedUser) {
-            return res.status(404).json({label: "USER_NOT_FOUND", status: false, message: 'USERNAME NOT FOUND'});
+            return res.status(404).json({
+                label: "USER_NOT_FOUND",
+                status: false,
+                message: 'USERNAME NOT FOUND'
+            });
         }
+
         if (!selectedUser.isVerified) {
             return res.status(401).json({
                 label: "NOT_VERIFIED",
@@ -40,34 +45,47 @@ const login = async (req, res) => {
                 message: 'PLEASE VERIFY YOUR EMAIL AND PHONE NUMBER'
             });
         }
+
         const isPasswordValid = await bcrypt.compare(req.body.password, selectedUser.password);
         if (!isPasswordValid) {
-            return res.status(401).json({label: "INCORRECT_PASSWORD", status: false, message: "INCORRECT PASSWORD"});
+            return res.status(401).json({
+                label: "INCORRECT_PASSWORD",
+                status: false,
+                message: "INCORRECT PASSWORD"
+            });
         }
-        const email = selectedUser.email;
-        const name = selectedUser.name;
-        const role = selectedUser.role;
-        const id = selectedUser._id;
 
-        const token = jwt.sign({email,name, role, id}, process.env.SECRET_KEY, {expiresIn: 3600});
+        const user = {
+            id: selectedUser._id,
+            name: selectedUser.name,
+            email: selectedUser.email,
+            role: selectedUser.role,
+        };
+
+        const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
         res.setHeader('Authorization', `Bearer ${token}`);
 
-        return res.status(200).json({status: true, message: "USER LOGIN SUCCESSFULLY", token});
+        return res.status(200).json({
+            status: true,
+            message: "USER LOGIN SUCCESSFULLY",
+            token,
+            user
+        });
 
     } catch (error) {
-        return res.status(500).json({status: false, message: 'Internal server error'});
+        console.error("Login error:", error);
+        return res.status(500).json({
+            status: false,
+            message: 'Internal server error',
+        });
     }
-}
+};
 
 const signUp = async (req, res) => {
     try {
-        const {
-            name,
-            email,
-            password,
-        } = req.body;
+        const { name, email, password } = req.body;
 
-        const existingUserByEmail = await UserSchema.findOne({email});
+        const existingUserByEmail = await UserSchema.findOne({ email });
         if (existingUserByEmail) {
             return res.status(400).json({
                 code: 400,
@@ -94,6 +112,7 @@ const signUp = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("Error during user registration:", error);  // Log the full error here
         return res.status(500).json({
             code: 500,
             status: false,
