@@ -17,6 +17,7 @@ const initializeAdmin = async () => {
             name: adminName,
             email: adminEmail,
             password: hashedPassword,
+            phone: "0771234567",
             isVerified: true,
             role: "ADMIN",
         });
@@ -29,7 +30,7 @@ const initializeAdmin = async () => {
 
 const login = async (req, res) => {
     try {
-        const selectedUser = await UserSchema.findOne({ email: req.body.email });
+        const selectedUser = await UserSchema.findOne({email: req.body.email});
         if (!selectedUser) {
             return res.status(404).json({
                 label: "USER_NOT_FOUND",
@@ -62,7 +63,12 @@ const login = async (req, res) => {
             role: selectedUser.role,
         };
 
-        const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role }, process.env.SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }, process.env.SECRET_KEY, {expiresIn: '1h'});
         res.setHeader('Authorization', `Bearer ${token}`);
 
         return res.status(200).json({
@@ -83,9 +89,9 @@ const login = async (req, res) => {
 
 const signUp = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const {name, email, password, phone, role} = req.body;
 
-        const existingUserByEmail = await UserSchema.findOne({ email });
+        const existingUserByEmail = await UserSchema.findOne({email});
         if (existingUserByEmail) {
             return res.status(400).json({
                 code: 400,
@@ -99,8 +105,9 @@ const signUp = async (req, res) => {
             name: name,
             email: email,
             password: hashedPassword,
+            phone: phone ? phone : "",
             isVerified: true,
-            role: "STUDENT",
+            role: role ? role : "STUDENT",
         });
 
         await newUser.save();
@@ -112,7 +119,7 @@ const signUp = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error during user registration:", error);  // Log the full error here
+        console.error("Error during user registration:", error);
         return res.status(500).json({
             code: 500,
             status: false,
@@ -157,37 +164,10 @@ const updateUserRole = (req, res) => {
         });
 };
 
-const getAllUsers = async (req, res) => {
-    try {
-        const users = await UserSchema.find({role: USER_ENUMS.ROLES.USER})
-            .select('_id name email role');
-
-        if (!users || users.length === 0) {
-            return res.status(404).json({
-                code:404,
-                status: false,
-                message: 'NO USERS FOUND',
-            });
-        }
-        return res.status(200).json({
-            code:200,
-            status: true,
-            message: 'USERS RETRIEVED SUCCESSFULLY.',
-            data: users,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            code:500,
-            status: false,
-            message: 'SERVER ERROR.PLEASE TRY AGAIN LATER.',
-        });
-    }
-};
 
 module.exports = {
     initializeAdmin,
     signUp,
     login,
     updateUserRole,
-    getAllUsers,
 };

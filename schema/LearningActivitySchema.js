@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const LearningActivitySchema = new mongoose.Schema({
-    parent: {type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true},
+    createdBy: {type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true},
     title: {type: String, required: true},
     description: {type: String, required: true},
     difficultyLevel: {type: String, required: true,enum:['EASY','MEDIUM','HARD']},
